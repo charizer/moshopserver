@@ -433,7 +433,7 @@ type NideshopUserLevel struct {
 func init() {
 
 	// set default database
-	orm.RegisterDataBase("default", "mysql", "nideshop:37671469Z!@@tcp(rm-uf6n9357u96det20t2o.mysql.rds.aliyuncs.com:3306)/nideshop?charset=utf8mb4", 30)
+	orm.RegisterDataBase("default", "mysql", "root:123456@tcp(master1:30006)/nideshop?charset=utf8mb4", 30)
 
 	// register model
 	orm.RegisterModel(new(NideshopAd))

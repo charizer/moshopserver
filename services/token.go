@@ -90,7 +90,8 @@ func getControllerAndAction(rawvalue string) (controller, action string) {
 var LoginUserId string
 
 func FilterFunc(ctx *context.Context) {
-
+	fmt.Println("req url:", ctx.Request.RequestURI)
+	return
 	controller, action := getControllerAndAction(ctx.Request.RequestURI)
 	token := ctx.Input.Header("x-nideshop-token")
 
