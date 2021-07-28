@@ -24,6 +24,11 @@ type CartTotal struct {
 type GoodsCount struct {
 	CartTotal CartTotal `json:"cartTotal"`
 }
+
+type CartCount struct {
+	Count         int     `json:"count"`
+}
+
 type IndexCartData struct {
 	CartList  []models.NideshopCart `json:"cartList"`
 	CartTotal CartTotal             `json:"cartTotal"`
@@ -312,6 +317,24 @@ func (this *CartController) Cart_GoodsCount() {
 	cartData := getCart(userId)
 	goodscount := GoodsCount{CartTotal: CartTotal{GoodsCount: cartData.CartTotal.GoodsCount}}
 	utils.ReturnHTTPSuccess(&this.Controller, goodscount)
+	this.ServeJSON()
+}
+
+func (this *CartController) Cart_CartCount(){
+	userId, _ := getUserIdFromJwt(this.Ctx)
+	goodsId := utils.String2Int(this.GetString("goodsId"))
+	productId := utils.String2Int(this.GetString("productId"))
+	o := orm.NewOrm()
+	carttable := new(models.NideshopCart)
+	var cartItem models.NideshopCart
+	cartCount := 0
+	err := o.QueryTable(carttable).Filter("user_id", userId).Filter("goods_id", goodsId).Filter("product_id", productId).One(&cartItem)
+	if err == nil {
+		cartCount = cartItem.Number
+	}
+	utils.ReturnHTTPSuccess(&this.Controller, CartCount{
+		Count: cartCount,
+	})
 	this.ServeJSON()
 }
 

@@ -32,6 +32,7 @@ func init() {
 	beego.Router("api/cart/checked", &controllers.CartController{}, "post:Cart_Checked")
 	beego.Router("api/cart/goodscount", &controllers.CartController{}, "get:Cart_GoodsCount")
 	beego.Router("api/cart/checkout", &controllers.CartController{}, "get:Cart_Checkout")
+	beego.Router("api/cart/cartcount", &controllers.CartController{}, "get:Cart_CartCount")
 
 	beego.Router("api/pay/prepay", &controllers.PayController{}, "get:Pay_Prepay")
 
