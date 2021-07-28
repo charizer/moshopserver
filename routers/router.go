@@ -54,7 +54,7 @@ func init() {
 	beego.Router("api/address/list", &controllers.AddressController{}, "get:Address_List")
 	beego.Router("api/address/detail", &controllers.AddressController{}, "get:Address_Detail")
 	beego.Router("api/address/save", &controllers.AddressController{}, "post:Address_Save")
-	beego.Router("api/address/delete", &controllers.AddressController{}, "post:Address_Delete")
+	beego.Router("api/address/delete", &controllers.AddressController{}, "delete:Address_Delete")
 
 	beego.Router("api/region/list", &controllers.RegionController{}, "get:Region_List")
 

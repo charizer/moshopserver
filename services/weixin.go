@@ -8,8 +8,8 @@ import (
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/httplib"
-	"moshopserver/utils"
 	"github.com/objcoding/wxpay"
+	"moshopserver/utils"
 )
 
 type WXLoginResponse struct {
@@ -46,6 +46,7 @@ type ResUserInfo struct {
 	Signature     string     `json:"signature"`
 	EncryptedData string     `json:"encryptedData"`
 	IV            string     `json:"iv"`
+	Mobile        string 	 `json:"mobile"`
 }
 
 func Login(code string, fullUserInfo ResUserInfo) *WXUserInfo {

@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"errors"
+	"github.com/astaxie/beego/context"
 	"moshopserver/services"
 	"moshopserver/utils"
 )
@@ -31,6 +33,15 @@ import (
 // }
 
 func getLoginUserId() int {
+	return 1
 	intuserId := utils.String2Int(services.LoginUserId)
 	return intuserId
+}
+
+func getUserIdFromJwt(ctx *context.Context) (int, error) {
+	userId := ctx.Input.Header("userId")
+	if userId == "" {
+		return 0, errors.New("token has not userId")
+	}
+	return utils.String2Int(userId), nil
 }

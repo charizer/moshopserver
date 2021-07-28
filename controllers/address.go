@@ -2,8 +2,10 @@ package controllers
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
+	"github.com/fatih/structs"
 	"moshopserver/models"
 	"moshopserver/utils"
 )
@@ -21,14 +23,19 @@ type AddressListRtnJson struct {
 }
 
 func (this *AddressController) Address_List() {
-
+	userId, err := getUserIdFromJwt(this.Ctx)
+	if err != nil {
+		this.CustomAbort(401, "token失效")
+	}
 	o := orm.NewOrm()
 	addresstable := new(models.NideshopAddress)
 	var addresses []models.NideshopAddress
 
-	o.QueryTable(addresstable).Filter("user_id", getLoginUserId()).All(&addresses)
-
-	rtnaddress := make([]AddressListRtnJson, 0)
+	_, err = o.QueryTable(addresstable).Filter("user_id", userId).OrderBy("-is_default").All(&addresses)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+	/*rtnaddress := make([]AddressListRtnJson, 0)
 
 	for _, val := range addresses {
 
@@ -43,9 +50,9 @@ func (this *AddressController) Address_List() {
 			FullRegion:      provicename + cityname + distinctname,
 		})
 
-	}
+	}*/
 
-	utils.ReturnHTTPSuccess(&this.Controller, rtnaddress)
+	utils.ReturnHTTPSuccess(&this.Controller, addresses)
 	this.ServeJSON()
 
 }
@@ -57,10 +64,12 @@ func (this *AddressController) Address_Detail() {
 	o := orm.NewOrm()
 	addresstable := new(models.NideshopAddress)
 	var address models.NideshopAddress
-
-	err := o.QueryTable(addresstable).Filter("id", intid).Filter("user_id", getLoginUserId()).One(&address)
-
-	var val AddressListRtnJson
+	userId, _ := getUserIdFromJwt(this.Ctx)
+	err := o.QueryTable(addresstable).Filter("id", intid).Filter("user_id", userId).One(&address)
+	if err != nil {
+		fmt.Printf("address id:%d err:%s", intid, err.Error())
+	}
+	/*var val AddressListRtnJson
 
 	if err != orm.ErrNoRows {
 
@@ -74,8 +83,8 @@ func (this *AddressController) Address_Detail() {
 			DistrictName:    distinctname,
 			FullRegion:      provicename + cityname + distinctname,
 		}
-	}
-	utils.ReturnHTTPSuccess(&this.Controller, val)
+	}*/
+	utils.ReturnHTTPSuccess(&this.Controller, address)
 	this.ServeJSON()
 }
 
@@ -87,7 +96,10 @@ type AddressSaveBody struct {
 	Mobile     string `json:"mobile"`
 	Name       string `json:"name"`
 	ProvinceId int    `json:"province_id"`
-	AddressId  int    `json:"address_id"`
+	AddressId  int    `json:"id"`
+	ProvinceName string `json:"province_name"`
+	CityName     string `json:"city_name"`
+	DistrictName string `json:"district_name"`
 }
 
 func (this *AddressController) Address_Save() {
@@ -104,30 +116,21 @@ func (this *AddressController) Address_Save() {
 	distinctid := asb.DistrictId
 	isdefault := asb.IsDefault
 	addressid := asb.AddressId
-	userid := getLoginUserId()
-	var intisdefault int
+
+	userid, err := getUserIdFromJwt(this.Ctx)
+	if err != nil {
+		this.CustomAbort(401, "token失效")
+	}
+	/*var intisdefault int
 	if isdefault {
 		intisdefault = 1
 	} else {
 		intisdefault = 0
-	}
+	}*/
 
 	intcityid := cityid
 	intprovinceid := provinceid
 	intdistinctid := distinctid
-
-	// type NideshopAddress struct {
-	// 	Address    string `orm:"not null default '' VARCHAR(120)"`
-	// 	CityId     int    `orm:"not null default 0 SMALLINT(5)"`
-	// 	CountryId  int    `orm:"not null default 0 SMALLINT(5)"`
-	// 	DistrictId int    `orm:"not null default 0 SMALLINT(5)"`
-	// 	Id         int    `orm:"not null pk autoincr MEDIUMINT(8)"`
-	// 	IsDefault  int    `orm:"not null default 0 TINYINT(1)"`
-	// 	Mobile     string `orm:"not null default '' VARCHAR(60)"`
-	// 	Name       string `orm:"not null default '' VARCHAR(50)"`
-	// 	ProvinceId int    `orm:"not null default 0 SMALLINT(5)"`
-	// 	UserId     int    `orm:"not null default 0 index MEDIUMINT(8)"`
-	// }
 
 	addressdata := models.NideshopAddress{
 		Address:    address,
@@ -137,32 +140,43 @@ func (this *AddressController) Address_Save() {
 		Name:       name,
 		Mobile:     mobile,
 		UserId:     userid,
-		IsDefault:  intisdefault,
+		IsDefault:  isdefault,
+		ProvinceName: asb.ProvinceName,
+		CityName:        asb.CityName,
+		DistrictName:    asb.DistrictName,
 	}
 	o := orm.NewOrm()
 	addresstable := new(models.NideshopAddress)
 
-	var intid int64
+
 	if addressid == 0 {
 		id, err := o.Insert(&addressdata)
 		if err == nil {
-			intid = id
+			addressid = int(id)
 		}
+		fmt.Println("insert address")
 	} else {
-		o.QueryTable(addresstable).Filter("id", intid).Filter("user_id", userid).Update(orm.Params{
+		/*o.QueryTable(addresstable).Filter("id", intid).Filter("user_id", userid).Update(orm.Params{
 			"is_default": 0,
-		})
+		})*/
+		addressdata.Id = addressid
+		_, err := o.QueryTable(addresstable).Filter("id", addressid).Filter("user_id", userid).Update(structs.Map(addressdata))
+		if err != nil {
+			fmt.Println("update address err:", err.Error())
+		}else {
+			fmt.Println("update address:", addressid)
+		}
 	}
-
 	if isdefault {
-		_, err := o.Raw("UPDATE nideshop_address SET is_default = 0 where id <> ? and user_id = ?", intid, userid).Exec()
-		if err == nil {
+		_, err := o.Raw("UPDATE nideshop_address SET is_default = false where user_id = ? and id <> ? ", userid, addressid).Exec()
+		if err != nil {
+			fmt.Println("update err:", err.Error())
 			//res.RowsAffected()
 			//fmt.Println("mysql row affected nums: ", num)
 		}
 	}
 	var addressinfo models.NideshopAddress
-	o.QueryTable(addresstable).Filter("id", intid).One(&addressinfo)
+	o.QueryTable(addresstable).Filter("id", addressid).One(&addressinfo)
 
 	utils.ReturnHTTPSuccess(&this.Controller, addressinfo)
 	this.ServeJSON()
@@ -173,11 +187,16 @@ func (this *AddressController) Address_Delete() {
 
 	addressid := this.GetString("id")
 	intaddressid := utils.String2Int(addressid)
-
+	userid, err := getUserIdFromJwt(this.Ctx)
+	if err != nil {
+		this.CustomAbort(401, "token失效")
+	}
 	o := orm.NewOrm()
 	addresstable := new(models.NideshopAddress)
-	o.QueryTable(addresstable).Filter("id", intaddressid).Filter("user_id", getLoginUserId()).Delete()
-
+	fmt.Println("delete address id:", intaddressid)
+	o.QueryTable(addresstable).Filter("id", intaddressid).Filter("user_id", userid).Delete()
+	utils.ReturnHTTPSuccess(&this.Controller, nil)
+	this.ServeJSON()
 	return
 
 }

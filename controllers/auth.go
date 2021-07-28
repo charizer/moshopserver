@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
@@ -28,22 +29,25 @@ func (this *AuthController) Auth_LoginByWeixin() {
 	//fmt.Print(alb)
 	clientIP := this.Ctx.Input.IP()
 
-	userInfo := services.Login(alb.Code, alb.UserInfo)
+	/*userInfo := services.Login(alb.Code, alb.UserInfo)
 	if userInfo == nil {
 
-	}
+	}*/
 
 	o := orm.NewOrm()
 
 	var user models.NideshopUser
 	usertable := new(models.NideshopUser)
-	err = o.QueryTable(usertable).Filter("weixin_openid", userInfo.OpenID).One(&user)
+	err = o.QueryTable(usertable).Filter("mobile", alb.UserInfo.Mobile).One(&user)
 	if err == orm.ErrNoRows {
-		newuser := models.NideshopUser{Username: utils.GetUUID(), Password: "", RegisterTime: utils.GetTimestamp(),
-			RegisterIp: clientIP, Mobile: "", WeixinOpenid: userInfo.OpenID, Avatar: userInfo.AvatarUrl, Gender: userInfo.Gender,
-			Nickname: userInfo.NickName}
+		newuser := models.NideshopUser{Username: alb.UserInfo.Mobile, Password: "", RegisterTime: utils.GetTimestamp(),
+			RegisterIp: clientIP, Mobile: alb.UserInfo.Mobile, WeixinOpenid: "", Avatar: "", Gender: 1,
+			Nickname: alb.UserInfo.Mobile}
 		o.Insert(&newuser)
-		o.QueryTable(usertable).Filter("weixin_openid", userInfo.OpenID).One(&user)
+		err = o.QueryTable(usertable).Filter("mobile", alb.UserInfo.Mobile).One(&user)
+		if err == orm.ErrNoRows {
+			fmt.Println("no user")
+		}
 	}
 
 	userinfo := make(map[string]interface{})
@@ -53,7 +57,7 @@ func (this *AuthController) Auth_LoginByWeixin() {
 	userinfo["gender"] = user.Gender
 	userinfo["avatar"] = user.Avatar
 	userinfo["birthday"] = user.Birthday
-
+	userinfo["mobile"] = user.Mobile
 	user.LastLoginIp = clientIP
 	user.LastLoginTime = utils.GetTimestamp()
 

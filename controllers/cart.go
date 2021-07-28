@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/astaxie/beego"
@@ -33,12 +34,13 @@ type GoodsSpecifition struct {
 	Name string
 }
 
-func getCart() IndexCartData {
+func getCart(userId int) IndexCartData {
+
 
 	o := orm.NewOrm()
 	carttable := new(models.NideshopCart)
 	var carts []models.NideshopCart
-	o.QueryTable(carttable).Filter("user_id", getLoginUserId()).Filter("session_id", 1).All(&carts)
+	o.QueryTable(carttable).Filter("user_id", userId).Filter("session_id", 1).All(&carts)
 
 	var goodsCount int
 	var goodsAmount float64
@@ -63,8 +65,11 @@ func getCart() IndexCartData {
 }
 
 func (this *CartController) Cart_Index() {
+	userId, err := getUserIdFromJwt(this.Ctx)
+	if err != nil {
 
-	utils.ReturnHTTPSuccess(&this.Controller, getCart())
+	}
+	utils.ReturnHTTPSuccess(&this.Controller, getCart(userId))
 	this.ServeJSON()
 }
 
@@ -83,12 +88,17 @@ func (this *CartController) Cart_Add() {
 	intgoodsId := ab.GoodsId
 	intproductId := ab.ProductId
 	intnumber := ab.Number
-	intuserId := getLoginUserId()
-
+	intuserId, err := getUserIdFromJwt(this.Ctx)
+	if err != nil {
+		this.CustomAbort(401, "token失效")
+		/*this.Ctx.ResponseWriter.WriteHeader(401)
+		utils.ApiJsonReturn(&this.Controller, "token失效",401, nil)
+		return*/
+	}
 	o := orm.NewOrm()
 	goodstable := new(models.NideshopGoods)
 	var goods models.NideshopGoods
-	err := o.QueryTable(goodstable).Filter("id", intgoodsId).One(&goods)
+	err = o.QueryTable(goodstable).Filter("id", intgoodsId).One(&goods)
 	if err == orm.ErrNoRows || goods.IsDelete {
 		this.CustomAbort(400, "商品已下架")
 	}
@@ -133,7 +143,9 @@ func (this *CartController) Cart_Add() {
 			MarketPrice:               product.RetailPrice,
 			GoodsSpecifitionNameValue: strings.Join(vals, ";"),
 			GoodsSpecifitionIds:       product.GoodsSpecificationIds,
-			Checked:                   1}
+			Checked:                   1,
+			GoodsBrief:                goods.GoodsBrief,
+		}
 		o.Insert(&cartData)
 	} else {
 		if product.GoodsNumber < (intnumber + cart.Number) {
@@ -143,7 +155,7 @@ func (this *CartController) Cart_Add() {
 			Filter("product_id", intproductId).Update(orm.Params{"number": orm.ColValue(orm.ColAdd, intnumber)})
 	}
 
-	utils.ReturnHTTPSuccess(&this.Controller, getCart())
+	utils.ReturnHTTPSuccess(&this.Controller, getCart(intuserId))
 	this.ServeJSON()
 }
 
@@ -155,7 +167,7 @@ type CartUpdateBody struct {
 }
 
 func (this *CartController) Cart_Update() {
-
+	userId, _  := getUserIdFromJwt(this.Ctx)
 	var ub CartUpdateBody
 	body := this.Ctx.Input.RequestBody
 	json.Unmarshal(body, &ub)
@@ -181,7 +193,7 @@ func (this *CartController) Cart_Update() {
 		cart.Number = intnumber
 		o.Update(&cart, "number")
 
-		utils.ReturnHTTPSuccess(&this.Controller, getCart())
+		utils.ReturnHTTPSuccess(&this.Controller, getCart(userId))
 		this.ServeJSON()
 		return
 	}
@@ -228,7 +240,7 @@ func (this *CartController) Cart_Update() {
 			"goods_sn":                     product.GoodsSn})
 	}
 
-	utils.ReturnHTTPSuccess(&this.Controller, getCart())
+	utils.ReturnHTTPSuccess(&this.Controller, getCart(userId))
 	this.ServeJSON()
 }
 
@@ -238,7 +250,7 @@ type CartCheckedBody struct {
 }
 
 func (this *CartController) Cart_Checked() {
-
+	userId, _ := getUserIdFromJwt(this.Ctx)
 	var cb CartCheckedBody
 	body := this.Ctx.Input.RequestBody
 	json.Unmarshal(body, &cb)
@@ -266,7 +278,7 @@ func (this *CartController) Cart_Checked() {
 		"checked": intisChecked,
 	})
 
-	utils.ReturnHTTPSuccess(&this.Controller, getCart())
+	utils.ReturnHTTPSuccess(&this.Controller, getCart(userId))
 	this.ServeJSON()
 }
 
@@ -275,12 +287,12 @@ type CartDeleteBody struct {
 }
 
 func (this *CartController) Cart_Delete() {
-
+	userId, _ := getUserIdFromJwt(this.Ctx)
 	var db CartDeleteBody
 	body := this.Ctx.Input.RequestBody
 	err := json.Unmarshal(body, &db)
 
-	intuserId := getLoginUserId()
+	intuserId, _ := getUserIdFromJwt(this.Ctx)
 	if err != nil {
 		this.Abort("删除出错")
 	}
@@ -290,14 +302,14 @@ func (this *CartController) Cart_Delete() {
 	carttable := new(models.NideshopCart)
 	o.QueryTable(carttable).Filter("product_id__in", productidsarray).Filter("user_id", intuserId).Delete()
 
-	utils.ReturnHTTPSuccess(&this.Controller, getCart())
+	utils.ReturnHTTPSuccess(&this.Controller, getCart(userId))
 	this.ServeJSON()
 
 }
 
 func (this *CartController) Cart_GoodsCount() {
-
-	cartData := getCart()
+	userId, _ := getUserIdFromJwt(this.Ctx)
+	cartData := getCart(userId)
 	goodscount := GoodsCount{CartTotal: CartTotal{GoodsCount: cartData.CartTotal.GoodsCount}}
 	utils.ReturnHTTPSuccess(&this.Controller, goodscount)
 	this.ServeJSON()
@@ -312,7 +324,7 @@ type CartAddress struct {
 }
 
 type CheckoutRtnJson struct {
-	Address          CartAddress                 `json:"checkedAddress"`
+	Address          models.NideshopAddress      `json:"checkedAddress"`
 	FreightPrice     float64                     `json:"freightPrice"`
 	CheckedCoupon    []models.NideshopUserCoupon `json:"checkedCoupon"`
 	CouponList       []models.NideshopUserCoupon `json:"couponList"`
@@ -324,21 +336,30 @@ type CheckoutRtnJson struct {
 }
 
 func (this *CartController) Cart_Checkout() {
-
+	userId, _ := getUserIdFromJwt(this.Ctx)
 	addressId := this.GetString("addressId")
 	intaddressid := utils.String2Int(addressId)
 
 	o := orm.NewOrm()
 	addresstable := new(models.NideshopAddress)
+	var addresses []models.NideshopAddress
 	var address models.NideshopAddress
 	var err error
-	if addressId != "" {
-		err = o.QueryTable(addresstable).Filter("is_default", 1).Filter("user_id", getLoginUserId()).One(&address)
+	if addressId == "" {
+		_, err = o.QueryTable(addresstable).Filter("user_id", userId).OrderBy("-is_default").All(&addresses)
+		if err != nil && err != orm.ErrNoRows {
+			fmt.Println("check order get addr err:%s", err.Error())
+		}
+		if len(addresses) > 0 {
+			address = addresses[0]
+		}
 	} else {
-		err = o.QueryTable(addresstable).Filter("id", intaddressid).Filter("user_id", getLoginUserId()).One(&address)
+		err = o.QueryTable(addresstable).Filter("id", intaddressid).Filter("user_id", userId).One(&address)
 	}
+	if err != orm.ErrNoRows {
 
-	var customaddress CartAddress
+	}
+	/*var customaddress CartAddress
 
 	if err != orm.ErrNoRows {
 		customaddress.NideshopAddress = address
@@ -346,10 +367,10 @@ func (this *CartController) Cart_Checkout() {
 		customaddress.CityName = models.GetRegionName(address.CityId)
 		customaddress.DistrictName = models.GetRegionName(address.DistrictId)
 		customaddress.FullRegion = customaddress.ProvinceName + customaddress.CityName + customaddress.DistrictName
-	}
+	}*/
 
 	var freightPrice float64 = 0.0
-	cartData := getCart()
+	cartData := getCart(userId)
 	var checkedgoodslist []models.NideshopCart
 	for _, val := range cartData.CartList {
 		if val.Checked == 1 {
@@ -357,9 +378,9 @@ func (this *CartController) Cart_Checkout() {
 		}
 	}
 
-	usercoupontable := new(models.NideshopUserCoupon)
+	/*usercoupontable := new(models.NideshopUserCoupon)
 	var couponlist []models.NideshopUserCoupon
-	o.QueryTable(usercoupontable).All(&couponlist)
+	o.QueryTable(usercoupontable).All(&couponlist)*/
 
 	var couponPrice float64 = 0.0
 
@@ -368,10 +389,10 @@ func (this *CartController) Cart_Checkout() {
 	actualPrice := ordertotalprice - 0
 
 	utils.ReturnHTTPSuccess(&this.Controller, CheckoutRtnJson{
-		Address:      customaddress,
+		Address:      address,
 		FreightPrice: freightPrice,
-		// checkedCoupon: {},
-		CouponList:       couponlist,
+		CheckedCoupon: []models.NideshopUserCoupon{},
+		CouponList:       []models.NideshopUserCoupon{},
 		CouponPrice:      couponPrice,
 		CheckedGoodsList: checkedgoodslist,
 		GoodsTotalPrice:  goodstotalprice,

@@ -31,11 +31,15 @@ type NideshopAddress struct {
 	CountryId  int    `json:"country_id"`
 	DistrictId int    `json:"district_id"`
 	Id         int    `json:"id"`
-	IsDefault  int    `json:"is_default"`
+	IsDefault  bool    `json:"is_default"`
 	Mobile     string `json:"mobile"`
 	Name       string `json:"name"`
 	ProvinceId int    `json:"province_id"`
 	UserId     int    `json:"user_id"`
+	ProvinceName string `json:"province_name"`
+	CityName     string `json:"city_name"`
+	DistrictName string `json:"district_name"`
+	//FullRegion   string `json:"full_region"`
 }
 
 type NideshopAdmin struct {
@@ -96,6 +100,7 @@ type NideshopCart struct {
 	RetailPrice               float64 `json:"retail_price"`
 	SessionId                 string  `json:"session_id"`
 	UserId                    int     `json:"user_id"`
+	GoodsBrief  		      string  `json:"goods_brief"`
 }
 
 type NideshopCategory struct {

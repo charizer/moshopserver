@@ -5,7 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/context"
 	jwt "github.com/dgrijalva/jwt-go"
 	"moshopserver/utils"
@@ -13,7 +12,7 @@ import (
 
 var key = []byte("adfadf!@#2")
 
-var expireTime = 20
+var expireTime = 24 * 365
 
 type CustomClaims struct {
 	UserID string `json:"userid"`
@@ -37,7 +36,10 @@ func Parse(tokenstr string) *jwt.Token {
 	token, err := jwt.ParseWithClaims(tokenstr, &CustomClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return []byte(key), nil
 	})
-
+	if err != nil {
+		fmt.Println("parse err:", err)
+		return nil
+	}
 	if token.Valid {
 		return token
 	} else if ve, ok := err.(*jwt.ValidationError); ok {
@@ -61,7 +63,7 @@ func Create(userid string) string {
 	claims := CustomClaims{
 		userid, jwt.StandardClaims{
 			IssuedAt:  time.Now().Unix(),
-			ExpiresAt: time.Now().Add(time.Minute * time.Duration(expireTime)).Unix(),
+			ExpiresAt: time.Now().Add(time.Hour * time.Duration(expireTime)).Unix(),
 			Issuer:    "test",
 		},
 	}
@@ -89,25 +91,40 @@ func getControllerAndAction(rawvalue string) (controller, action string) {
 
 var LoginUserId string
 
+func filterUrl(action string) bool {
+	return strings.Contains(action, "cart/add") ||
+		strings.Contains(action, "address/list")
+}
+
 func FilterFunc(ctx *context.Context) {
 	fmt.Println("req url:", ctx.Request.RequestURI)
-	return
-	controller, action := getControllerAndAction(ctx.Request.RequestURI)
+
+	_, action := getControllerAndAction(ctx.Request.RequestURI)
+	fmt.Println("req action:", action)
 	token := ctx.Input.Header("x-nideshop-token")
 
-	if action == "auth/loginByWeixin" {
+	/*if action == "auth/loginByWeixin" {
 		return
-	}
+	}*/
+	fmt.Println("token:", token)
+	LoginUserId = "3"
 
-	if token == "" {
+	if token == "" && filterUrl(action){
 		data := utils.GetHTTPRtnJsonData(401, "need relogin")
+		ctx.ResponseWriter.WriteHeader(401)
 		ctx.Output.JSON(data, true, false)
-		ctx.Redirect(200, "/")
+		//ctx.Redirect(200, "/")
 		return
 	}
-	LoginUserId = GetUserID(token)
-
-	publiccontrollerlist := beego.AppConfig.String("controller::publicController")
+	if token == "" {
+		return
+	}
+	userId := GetUserID(token)
+	ctx.Request.Header.Add("userId", userId)
+	uu := ctx.Request.Header.Get("userId")
+	ttt := ctx.Input.Header("userId")
+	fmt.Printf("uu:%s, userId:%s\n", uu, ttt)
+	/*publiccontrollerlist := beego.AppConfig.String("controller::publicController")
 	publicactionlist := beego.AppConfig.String("action::publicAction")
 
 	if !strings.Contains(publiccontrollerlist, controller) && !strings.Contains(publicactionlist, action) {
@@ -117,5 +134,5 @@ func FilterFunc(ctx *context.Context) {
 			ctx.Redirect(200, "/")
 			//http.Redirect(ctx.ResponseWriter, ctx.Request, "/", http.StatusMovedPermanently)
 		}
-	}
+	}*/
 }
