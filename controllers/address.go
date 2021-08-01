@@ -65,9 +65,25 @@ func (this *AddressController) Address_Detail() {
 	addresstable := new(models.NideshopAddress)
 	var address models.NideshopAddress
 	userId, _ := getUserIdFromJwt(this.Ctx)
-	err := o.QueryTable(addresstable).Filter("id", intid).Filter("user_id", userId).One(&address)
+	/*err := o.QueryTable(addresstable).Filter("id", intid).Filter("user_id", userId).One(&address)
 	if err != nil {
 		fmt.Printf("address id:%d err:%s", intid, err.Error())
+	}*/
+	var err error
+	var addresses []models.NideshopAddress
+	if id == "" {
+		_, err = o.QueryTable(addresstable).Filter("user_id", userId).OrderBy("-is_default").All(&addresses)
+		if err != nil && err != orm.ErrNoRows {
+			fmt.Println("check order get addr err:%s", err.Error())
+		}
+		if len(addresses) > 0 {
+			address = addresses[0]
+		}
+	} else {
+		err = o.QueryTable(addresstable).Filter("id", intid).Filter("user_id", userId).One(&address)
+	}
+	if err != orm.ErrNoRows {
+
 	}
 	/*var val AddressListRtnJson
 

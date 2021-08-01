@@ -62,6 +62,7 @@ func init() {
 	beego.Router("api/order/submit", &controllers.OrderController{}, "post:Order_Submit")
 	beego.Router("api/order/list", &controllers.OrderController{}, "get:Order_List")
 	beego.Router("api/order/detail", &controllers.OrderController{}, "get:Order_Detail")
+	beego.Router("api/order/updatestatus", &controllers.OrderController{}, "post:Order_UpdateStatus")
 	//beego.Router("api/order/cancel", &controllers.OrderController{}, "post:Address_Save")
 	beego.Router("api/order/express", &controllers.OrderController{}, "get:Order_Express")
 

@@ -9,16 +9,32 @@ import (
 	"moshopserver/utils"
 )
 
+const (
+	ORDER_ALL = -1
+	ORDER_WAIT_PAY = 0
+	ORDER_WAIT_RECV = 1
+	ORDER_CANCEL = 2
+	ORDER_SUCC = 3
+	ORDER_FINISH = 4
+	ORDER_DELETE = 5
+)
+
 func GetOrderStatusText(orderid int) string {
 
 	o := orm.NewOrm()
 	ordertable := new(NideshopOrder)
 	var order NideshopOrder
 	o.QueryTable(ordertable).Filter("id", orderid).One(&order)
-	var statustext string = "未付款"
+	statustext := "待付款"
 	switch order.OrderStatus {
-	case 0:
-		statustext = "未付款"
+	case ORDER_WAIT_PAY:
+		statustext = "待付款"
+	case ORDER_WAIT_RECV:
+		statustext = "待收货"
+	case ORDER_CANCEL:
+		statustext = "已取消"
+	case ORDER_SUCC:
+		statustext = "交易成功"
 	}
 	return statustext
 }

@@ -298,6 +298,9 @@ type NideshopOrder struct {
 	ShippingFee    float64 `json:"shipping_fee"`
 	ShippingStatus int     `json:"shipping_status"`
 	UserId         int     `json:"user_id"`
+	ProvinceName string `json:"province_name"`
+	CityName     string `json:"city_name"`
+	DistrictName string `json:"district_name"`
 }
 
 type NideshopOrderExpress struct {

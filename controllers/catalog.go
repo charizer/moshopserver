@@ -29,7 +29,7 @@ func (this *CatalogController) Catalog_Index() {
 
 	var categories []models.NideshopCategory
 	categorytable := new(models.NideshopCategory)
-	o.QueryTable(categorytable).Filter("parent_id", 0).Limit(10).All(&categories)
+	o.QueryTable(categorytable).Filter("parent_id", 0).Filter("is_show", 1).OrderBy("sort_order").Limit(10).All(&categories)
 
 	var currentCategory *models.NideshopCategory = nil
 
@@ -45,7 +45,7 @@ func (this *CatalogController) Catalog_Index() {
 
 	if currentCategory != nil && currentCategory.Id > 0 {
 		var subCategories []models.NideshopCategory
-		o.QueryTable(categorytable).Filter("parent_id", currentCategory.Id).All(&subCategories)
+		o.QueryTable(categorytable).Filter("parent_id", currentCategory.Id).Limit(6).All(&subCategories)
 		curCategory.SubCategoryList = subCategories
 		curCategory.NideshopCategory = *currentCategory
 	}

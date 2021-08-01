@@ -84,7 +84,7 @@ func GetCommentPageData(rawData []models.NideshopComment, page int, size int) ut
 		pagedata = append(pagedata, rawData[idx])
 	}
 
-	return utils.PageData{NumsPerPage: size, CurrentPage: page, Count: count, TotalPages: totalpages, Data: pagedata}
+	return utils.PageData{NumsPerPage: size, CurrentPage: page, Count: int64(count), TotalPages: int64(totalpages), Data: pagedata}
 }
 
 type CommenListtRtnJson struct {
