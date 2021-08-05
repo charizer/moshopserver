@@ -47,6 +47,7 @@ type ResUserInfo struct {
 	EncryptedData string     `json:"encryptedData"`
 	IV            string     `json:"iv"`
 	Mobile        string 	 `json:"mobile"`
+	Valid     	  bool       `json:"valid"`
 }
 
 func Login(code string, fullUserInfo ResUserInfo) *WXUserInfo {

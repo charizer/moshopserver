@@ -3,6 +3,8 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
+	"moshopserver/cache"
+	"net/http"
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
@@ -33,7 +35,12 @@ func (this *AuthController) Auth_LoginByWeixin() {
 	if userInfo == nil {
 
 	}*/
-
+	if alb.UserInfo.Valid {
+		code, ok := cache.MemCachePool.Get(alb.UserInfo.Mobile)
+		if !ok || code.(string) != alb.UserInfo.Mobile {
+			this.CustomAbort(http.StatusInternalServerError, "验证码不对")
+		}
+	}
 	o := orm.NewOrm()
 
 	var user models.NideshopUser
@@ -61,8 +68,8 @@ func (this *AuthController) Auth_LoginByWeixin() {
 	user.LastLoginIp = clientIP
 	user.LastLoginTime = utils.GetTimestamp()
 
-	if _, err := o.Update(&user); err == nil {
-
+	if _, err := o.Update(&user); err != nil {
+		this.CustomAbort(http.StatusInternalServerError, err.Error())
 	}
 
 	sessionKey := services.Create(utils.Int2String(user.Id))

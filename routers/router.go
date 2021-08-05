@@ -13,7 +13,7 @@ func init() {
 	beego.Router("api/catalog/current", &controllers.CatalogController{}, "get:Catalog_Current")
 
 	beego.Router("api/auth/loginByWeixin", &controllers.AuthController{}, "post:Auth_LoginByWeixin")
-
+	beego.Router("api/sms/send", &controllers.SmsController{}, "post:Sms_SendSms")
 	beego.Router("api/goods/count", &controllers.GoodsController{}, "get:Goods_Count")
 	beego.Router("api/goods/list", &controllers.GoodsController{}, "get:Goods_List")
 	beego.Router("api/goods/category", &controllers.GoodsController{}, "get:Goods_Category")
