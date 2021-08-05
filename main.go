@@ -14,13 +14,14 @@ import (
 
 func displaySocket() error {
 	tabs, err := netstat.TCPSocks(func(s *netstat.SockTabEntry) bool {
+		fmt.Printf("%+v\n", s)
 		return s.LocalAddr.Port == 8089
 	})
 	if err != nil {
 		return err
 	}
 	for _, e := range tabs {
-		fmt.Printf("%v\n", e)
+		fmt.Printf("result %v\n", e)
 	}
 	return nil
 }
