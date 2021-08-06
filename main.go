@@ -3,12 +3,13 @@ package main
 import (
 	"fmt"
 	"github.com/astaxie/beego"
-	"github.com/cakturk/go-netstat/netstat"
 	"moshopserver/cache"
 	_ "moshopserver/models"
+	"moshopserver/netstat"
 	_ "moshopserver/routers"
 	"moshopserver/services"
 	_ "moshopserver/utils"
+	"runtime"
 	"time"
 )
 
@@ -20,7 +21,7 @@ func displaySocket() error {
 		return err
 	}
 	for _, e := range tabs {
-		fmt.Printf("tcp result %v\n", e)
+		fmt.Printf("tcp result port:%d state:%s\n", e.LocalAddr, e.State.String())
 	}
 	tabs, err = netstat.TCP6Socks(func(s *netstat.SockTabEntry) bool {
 		return s.LocalAddr.Port == 8089
@@ -29,7 +30,7 @@ func displaySocket() error {
 		return err
 	}
 	for _, e := range tabs {
-		fmt.Printf("tcp6 result %v\n", e)
+		fmt.Printf("tcp6 result port:%d state:%s\n", e.LocalAddr, e.State.String())
 	}
 	return nil
 }
@@ -51,6 +52,7 @@ func timerDisplaySocket(){
 }
 
 func main() {
+	fmt.Println("os:", runtime.GOOS)
 	cache.InitMemCache()
 	beego.BConfig.WebConfig.AutoRender = false
 	beego.BConfig.CopyRequestBody = true
