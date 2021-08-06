@@ -14,7 +14,14 @@ import (
 
 func displaySocket() error {
 	tabs, err := netstat.TCPSocks(func(s *netstat.SockTabEntry) bool {
-		fmt.Printf("%+v\n", s)
+		fmt.Printf("tcp socket %+v\n", s)
+		return s.LocalAddr.Port == 8089
+	})
+	if err != nil {
+		return err
+	}
+	tabs, err = netstat.TCP6Socks(func(s *netstat.SockTabEntry) bool {
+		fmt.Printf("tcp6 socket %+v\n", s)
 		return s.LocalAddr.Port == 8089
 	})
 	if err != nil {
@@ -30,7 +37,7 @@ func displaySocket() error {
 
 
 func timerDisplaySocket(){
-	d := time.Second * 5
+	d := time.Second * 10
 	t := time.NewTicker(d)
 	defer t.Stop()
 	for {
